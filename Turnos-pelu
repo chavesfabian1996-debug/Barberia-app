@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Turnos Pelu - Reserva Online</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border-radius: 15px; border: none; }
+        .btn-time { width: 80px; margin: 4px; }
+        .step-header { color: #0d6efd; font-weight: bold; margin-bottom: 15px; border-bottom: 2px solid #0d6efd; display: inline-block; }
+        .hidden { display: none; }
+    </style>
+</head>
+<body>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="text-center mb-4">
+                <h1 class="fw-bold">Turnos Pelu</h1>
+                <p class="text-muted">Agenda tu cita rápido y sin registros</p>
+            </div>
+
+            <div id="panel-sucursal" class="card shadow p-4 mb-3">
+                <h5 class="step-header">1. Selecciona la Peluquería</h5>
+                <select id="select-sucursal" class="form-select form-select-lg mb-2">
+                    <option value="">Cargando peluquerías...</option>
+                </select>
+                <div id="info-direccion" class="small text-muted mt-2"></div>
+            </div>
+
+            <div id="panel-profesional" class="card shadow p-4 mb-3 hidden">
+                <h5 class="step-header">2. Elige Profesional y Día</h5>
+                <select id="select-peluquero" class="form-select mb-3">
+                    <option value="">Selecciona al peluquero...</option>
+                </select>
+                <input type="date" id="input-fecha" class="form-control mb-3">
+                <div id="contenedor-horarios" class="d-flex flex-wrap justify-content-center">
+                    </div>
+            </div>
+
+            <div id="panel-confirmar" class="card shadow p-4 hidden">
+                <h5 class="step-header">3. Confirma tu Turno</h5>
+                <input type="text" id="nombre-cliente" class="form-control mb-3" placeholder="Tu nombre y apellido">
+                <button class="btn btn-success w-100 py-3 fw-bold" onclick="procesarReserva()">
+                    RESERVAR Y ENVIAR WHATSAPP
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+    import { getFirestore, collection, getDocs, doc, updateDoc, addDoc, query, where } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+        apiKey: "TU_API_KEY",
+        authDomain: "TU_PROYECTO.firebaseapp.com",
+        projectId: "TU_PROYECTO_ID",
+        storageBucket: "TU_PROYECTO.appspot.com",
+        messagingSenderId: "TU_ID",
+        appId: "TU_APP_ID"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    // VARIABLES DE ESTADO
+    let sucursalSeleccionada = null;
+    let peluqueroSeleccionado = null;
+    let horaSeleccionada = null;
+
+    // 1. CARGAR SUCURSALES AL INICIO
+    async function cargarSucursales() {
+        const querySnapshot = await getDocs(collection(db, "sucursales"));
+        const select = document.getElementById('select-sucursal');
+        select.innerHTML = '<option value="">Elegir sucursal...</option>';
+        querySnapshot.forEach((doc) => {
+            const data = doc.data();
+            select.innerHTML += `<option value="${doc.id}" data-dir="${data.direccion}">${data.nombre}</option>`;
+        });
+    }
+
+    document.getElementById('select-sucursal').addEventListener('change', async (e) => {
+        const id = e.target.value;
+        if (!id) return;
+        
+        sucursalSeleccionada = { id, nombre: e.target.selectedOptions[0].text };
+        document.getElementById('info-direccion').innerText = "📍 " + e.target.selectedOptions[0].dataset.dir;
+        
+        // Cargar Peluqueros de esa sucursal
+        const pSnap = await getDocs(collection(db, `sucursales/${id}/peluqueros`));
+        const pSelect = document.getElementById('select-peluquero');
+        pSelect.innerHTML = '<option value="">¿Con quién te quieres atender?</option>';
+        pSnap.forEach((pDoc) => {
+            const pData = pDoc.data();
+            pSelect.innerHTML += `<option value="${pDoc.id}" data-tel="${pData.telefono}">${pData.nombre}</option>`;
+        });
+        
+        document.getElementById('panel-profesional').classList.remove('hidden');
+    });
+
+    // 2. MOSTRAR HORARIOS AL ELEGIR PELUQUERO Y FECHA
+    const generarHorarios = () => {
+        const contenedor = document.getElementById('contenedor-horarios');
+        contenedor.innerHTML = '';
+        const horas = ["09:00", "10:00", "11:00", "15:00", "16:00", "17:00"]; // Ejemplo
+        
+        horas.forEach(h => {
+            const btn = document.createElement('button');
+            btn.className = 'btn btn-outline-primary btn-time';
+            btn.innerText = h;
+            btn.onclick = () => {
+                horaSeleccionada = h;
+                document.getElementById('panel-confirmar').classList.remove('hidden');
+                document.querySelectorAll('.btn-time').forEach(b => b.classList.replace('btn-primary', 'btn-outline-primary'));
+                btn.classList.replace('btn-outline-primary', 'btn-primary');
+            };
+            contenedor.appendChild(btn);
+        });
+    };
+
+    document.getElementById('input-fecha').addEventListener('change', generarHorarios);
+
+    // 3. PROCESAR RESERVA
+    window.procesarReserva = async () => {
+        const cliente = document.getElementById('nombre-cliente').value;
+        const fecha = document.getElementById('input-fecha').value;
+        const pSelect = document.getElementById('select-peluquero');
+        const telPeluquero = pSelect.selectedOptions[0].dataset.tel;
+        const nombrePeluquero = pSelect.selectedOptions[0].text;
+
+        if (!cliente || !fecha || !horaSeleccionada) return alert("Completa todos los campos");
+
+        // Guardar turno en Firestore
+        await addDoc(collection(db, "turnos"), {
+            sucursalId: sucursalSeleccionada.id,
+            peluquero: nombrePeluquero,
+            cliente, fecha, hora: horaSeleccionada
+        });
+
+        // Crear mensaje WhatsApp
+        const msg = `Hola ${nombrePeluquero}! Quiero un turno en *Turnos Pelu*:%0A📍 Sucursal: ${sucursalSeleccionada.nombre}%0A👤 Cliente: ${cliente}%0A📅 Fecha: ${fecha}%0A⏰ Hora: ${horaSeleccionada}`;
+        const urlWa = `https://wa.me/${telPeluquero}?text=${msg}`;
+
+        // Crear Recordatorio Google Calendar
+        const calUrl = `https://www.google.com/calendar/render?action=TEMPLATE&text=Corte+con+${nombrePeluquero}&dates=${fecha.replace(/-/g,'')}T${horaSeleccionada.replace(':','')}00Z`;
+
+        alert("¡Turno registrado! Se abrirá WhatsApp y luego tu calendario.");
+        window.open(urlWa, '_blank');
+        window.location.href = calUrl;
+    };
+
+    cargarSucursales();
+</script>
+</body>
+</html>
