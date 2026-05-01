@@ -1,1 +1,619 @@
 
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0"/>
+<title>C-PIKO BARBERÍA</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --negro: #1a1a2e;
+  --dorado: #e2b96f;
+  --verde: #2ecc71;
+  --rojo: #e74c3c;
+  --gris: #f4f4f4;
+  --blanco: #ffffff;
+}
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gris); min-height: 100vh; }
+
+/* HEADER */
+.header { background: var(--negro); color: var(--blanco); padding: 20px 16px 14px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.4); }
+.header h1 { font-size: 22px; letter-spacing: 2px; }
+.header p  { font-size: 11px; color: var(--dorado); margin-top: 3px; letter-spacing: 1px; }
+
+/* PANTALLAS */
+.pantalla { display: none; padding: 16px; padding-bottom: 60px; }
+.pantalla.activa { display: block; }
+
+/* CARD */
+.card { background: var(--blanco); border-radius: 14px; padding: 18px; margin-bottom: 14px; box-shadow: 0 1px 6px rgba(0,0,0,0.09); }
+.card h2 { font-size: 17px; color: var(--negro); margin-bottom: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--gris); }
+
+/* INPUTS */
+input, select { width: 100%; padding: 14px 12px; border: 1.5px solid #ddd; border-radius: 10px; font-size: 16px; background: #fafafa; color: #333; margin-bottom: 10px; -webkit-appearance: none; }
+input:focus, select:focus { outline: none; border-color: var(--negro); }
+label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 5px; }
+
+/* BOTONES */
+.btn { display: block; width: 100%; padding: 16px; border: none; border-radius: 12px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; margin-bottom: 10px; transition: opacity 0.2s, transform 0.1s; }
+.btn:active { opacity: 0.85; transform: scale(0.98); }
+.btn-negro  { background: var(--negro); color: var(--blanco); }
+.btn-verde  { background: #27ae60; color: var(--blanco); }
+.btn-rojo   { background: var(--rojo); color: var(--blanco); }
+.btn-dorado { background: var(--dorado); color: var(--negro); }
+.btn-wa     { background: #25D366; color: var(--blanco); }
+.btn-cal    { background: #4285F4; color: var(--blanco); }
+.btn-gris   { background: #bbb; color: var(--blanco); }
+.btn-sm     { padding: 9px 14px; font-size: 13px; width: auto; display: inline-block; margin: 4px; border-radius: 8px; }
+
+/* RANKING CARDS */
+.rank-card {
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 12px;
+  color: var(--blanco);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  cursor: pointer;
+  transition: transform 0.15s;
+  position: relative;
+  overflow: hidden;
+}
+.rank-card:active { transform: scale(0.98); }
+.rank-card h3 { font-size: 18px; letter-spacing: 1px; margin-bottom: 4px; }
+.rank-card .sub { font-size: 12px; opacity: 0.85; margin-bottom: 10px; }
+.rank-card .barra-container { background: rgba(255,255,255,0.25); border-radius: 10px; height: 8px; }
+.rank-card .barra { height: 8px; border-radius: 10px; background: rgba(255,255,255,0.9); transition: width 0.5s; }
+.rank-card .pct { font-size: 12px; opacity: 0.9; margin-top: 5px; text-align: right; }
+.rank-num { position: absolute; top: 12px; right: 14px; font-size: 28px; font-weight: bold; opacity: 0.25; }
+
+/* COLORES DE DISPONIBILIDAD */
+.disp-0  { background: linear-gradient(135deg, #1a7a3c, #27ae60); } /* verde oscuro */
+.disp-1  { background: linear-gradient(135deg, #27ae60, #52c97a); } /* verde claro */
+.disp-2  { background: linear-gradient(135deg, #f39c12, #f1c40f); } /* amarillo */
+.disp-3  { background: linear-gradient(135deg, #e67e22, #f39c12); } /* naranja */
+.disp-4  { background: linear-gradient(135deg, #c0392b, #e74c3c); } /* rojo */
+
+/* GRILLA HORAS */
+.grilla-horas { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 12px; }
+.hora-btn { padding: 11px 4px; border: 1.5px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 13px; cursor: pointer; text-align: center; transition: all 0.15s; }
+.hora-btn.seleccionada { background: var(--negro); color: var(--blanco); border-color: var(--negro); font-weight: bold; }
+.hora-btn.ocupada { background: #ffe5e5; color: #c0392b; border-color: #f5c6c6; text-decoration: line-through; cursor: not-allowed; }
+.hora-btn.ausente { background: #f0f0f0; color: #aaa; border-color: #ddd; cursor: not-allowed; font-size: 11px; }
+
+/* TURNO ITEM */
+.turno-item { display: flex; align-items: center; background: var(--blanco); border-radius: 12px; padding: 13px; margin-bottom: 9px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); border-left: 4px solid var(--negro); }
+.turno-hora { background: var(--negro); color: var(--blanco); border-radius: 8px; padding: 10px 6px; font-size: 14px; font-weight: bold; min-width: 58px; text-align: center; margin-right: 12px; flex-shrink: 0; }
+.turno-datos { flex: 1; }
+.turno-nombre { font-size: 15px; font-weight: 600; color: var(--negro); }
+.turno-tel { font-size: 12px; color: #888; margin-top: 2px; }
+
+/* FECHA NAV */
+.fecha-nav { display: flex; align-items: center; justify-content: space-between; background: var(--negro); color: var(--blanco); border-radius: 12px; padding: 13px 16px; margin-bottom: 14px; }
+.fecha-nav button { background: none; border: none; color: var(--dorado); font-size: 26px; cursor: pointer; padding: 0 6px; }
+.fecha-nav span { font-size: 14px; font-weight: bold; text-align: center; flex: 1; }
+
+/* CONFIRMACION */
+.confirmacion { background: #d4edda; border: 2px solid #27ae60; border-radius: 14px; padding: 22px; text-align: center; }
+.confirmacion h3 { color: #155724; font-size: 22px; margin-bottom: 10px; }
+.confirmacion p { color: #155724; font-size: 14px; line-height: 1.9; margin-bottom: 16px; }
+
+/* RESUMEN */
+.resumen { background: #eaf6ff; border-left: 4px solid var(--negro); border-radius: 10px; padding: 14px; margin-bottom: 12px; font-size: 14px; line-height: 2; }
+
+/* BADGE */
+.badge { display: inline-block; border-radius: 10px; padding: 2px 9px; font-size: 11px; font-weight: bold; margin-left: 6px; }
+.badge-pendiente { background: #f39c12; color: var(--blanco); }
+.badge-activo    { background: #27ae60; color: var(--blanco); }
+.badge-inactivo  { background: #aaa;    color: var(--blanco); }
+
+/* VACIO */
+.vacio { text-align: center; color: #aaa; padding: 30px 16px; font-size: 15px; }
+
+/* TOAST */
+#toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%); background: var(--negro); color: var(--blanco); padding: 12px 24px; border-radius: 24px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; max-width: 90%; text-align: center; }
+#toast.visible { opacity: 1; }
+#toast.error   { background: var(--rojo); }
+#toast.exito   { background: #27ae60; }
+
+/* ADMIN BARBERO CARD */
+.barbero-admin-card { background: var(--blanco); border-radius: 12px; padding: 14px; margin-bottom: 10px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); display: flex; align-items: center; }
+.barbero-admin-info { flex: 1; }
+.barbero-admin-nombre { font-size: 15px; font-weight: 600; color: var(--negro); }
+.barbero-admin-sub { font-size: 12px; color: #888; margin-top: 3px; }
+.barbero-admin-acciones { display: flex; flex-direction: column; gap: 6px; }
+
+/* AUSENCIA */
+.ausencia-item { background: #fff3cd; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
+
+/* LINK ADMIN */
+.link-admin { text-align: center; padding: 20px; }
+.link-admin a { color: #bbb; font-size: 12px; text-decoration: none; border-bottom: 1px dashed #bbb; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✂️ C-PIKO BARBERÍA</h1>
+  <p>Elegí tu barbería y sacá tu turno</p>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA CLIENTE: BARBERÍAS        -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-barberias" class="pantalla activa">
+  <div id="lista-barberias"></div>
+  <div class="link-admin">
+    <a href="#" onclick="mostrarLogin()">Acceso personal</a>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA CLIENTE: BARBEROS         -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-barberos" class="pantalla">
+  <button class="btn btn-gris" style="margin-bottom:14px" onclick="irA('barberias')">← Volver</button>
+  <div class="card">
+    <h2 id="titulo-barberia-sel">Barberos</h2>
+    <div id="lista-barberos-cliente"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA CLIENTE: SACAR TURNO      -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-sacar-turno" class="pantalla">
+  <button class="btn btn-gris" style="margin-bottom:14px" onclick="irA('barberos')">← Volver</button>
+  <div class="card">
+    <h2 id="titulo-barbero-sel">Sacar Turno</h2>
+
+    <label>1. Tu nombre *</label>
+    <input type="text" id="cli-nombre" placeholder="Tu nombre completo" autocapitalize="words"/>
+
+    <label>2. Tu teléfono *</label>
+    <input type="tel" id="cli-tel" placeholder="Tu número de WhatsApp"/>
+
+    <label>3. Fecha * <small style="color:#e74c3c">(Lun–Sáb)</small></label>
+    <input type="date" id="turno-fecha" onchange="onCambiarFecha()"/>
+
+    <label>4. Elegí tu horario</label>
+    <div class="grilla-horas" id="grilla-horas">
+      <p style="color:#aaa;font-size:13px;grid-column:span 4">Primero elegí una fecha</p>
+    </div>
+
+    <div class="resumen" id="resumen" style="display:none"></div>
+    <button class="btn btn-verde" onclick="confirmarTurno()">✅ Confirmar Turno</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA CLIENTE: CONFIRMACIÓN     -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-confirmacion" class="pantalla">
+  <div class="confirmacion" id="box-confirmacion"></div>
+  <button class="btn btn-negro" style="margin-top:14px" onclick="irA('barberias')">🏠 Volver al inicio</button>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA: LOGIN                    -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-login" class="pantalla">
+  <div class="card" style="max-width:340px;margin:20px auto">
+    <h2>🔐 Acceso</h2>
+    <label>Contraseña</label>
+    <input type="password" id="login-pass" placeholder="Ingresá tu contraseña" onkeydown="if(event.key==='Enter')hacerLogin()"/>
+    <button class="btn btn-negro" onclick="hacerLogin()">Entrar</button>
+    <button class="btn btn-gris" onclick="irA('barberias')">Cancelar</button>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA: BARBERO (su agenda)      -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-barbero-panel" class="pantalla">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <strong id="nombre-barbero-panel" style="font-size:16px;color:var(--negro)"></strong>
+    <button class="btn btn-rojo btn-sm" onclick="cerrarSesion()">Salir</button>
+  </div>
+
+  <!-- Tabs barbero -->
+  <div style="display:flex;gap:8px;margin-bottom:14px">
+    <button class="btn btn-negro btn-sm" onclick="tabBarbero('agenda')">📅 Mi Agenda</button>
+    <button class="btn btn-gris btn-sm"  onclick="tabBarbero('ausencias')">⏸ Ausencias</button>
+  </div>
+
+  <!-- Tab: Agenda -->
+  <div id="tab-agenda-barbero">
+    <div class="fecha-nav">
+      <button onclick="cambiarDiaBarbero(-1)">‹</button>
+      <span id="fecha-barbero-display"></span>
+      <button onclick="cambiarDiaBarbero(+1)">›</button>
+    </div>
+    <div id="lista-turnos-barbero"></div>
+  </div>
+
+  <!-- Tab: Ausencias -->
+  <div id="tab-ausencias-barbero" style="display:none">
+    <div class="card">
+      <h2>⏸ Marcar Ausencia</h2>
+      <label>Fecha</label>
+      <input type="date" id="aus-fecha"/>
+      <label>Hora inicio</label>
+      <select id="aus-desde"></select>
+      <label>Hora fin</label>
+      <select id="aus-hasta"></select>
+      <button class="btn btn-dorado" onclick="guardarAusencia()">Guardar ausencia</button>
+    </div>
+    <div id="lista-ausencias-barbero"></div>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════ -->
+<!-- PANTALLA: ADMIN                    -->
+<!-- ═══════════════════════════════════ -->
+<div id="pantalla-admin" class="pantalla">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+    <strong style="font-size:16px;color:var(--negro)">👑 Administrador</strong>
+    <button class="btn btn-rojo btn-sm" onclick="cerrarSesion()">Salir</button>
+  </div>
+
+  <!-- Tabs admin -->
+  <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
+    <button class="btn btn-negro btn-sm" onclick="tabAdmin('pendientes')">⏳ Pendientes</button>
+    <button class="btn btn-negro btn-sm" onclick="tabAdmin('activos')">✅ Activos</button>
+    <button class="btn btn-negro btn-sm" onclick="tabAdmin('agenda')">📅 Agenda</button>
+  </div>
+
+  <div id="tab-admin-pendientes"></div>
+  <div id="tab-admin-activos"    style="display:none"></div>
+  <div id="tab-admin-agenda"     style="display:none">
+    <div class="fecha-nav">
+      <button onclick="cambiarDiaAdmin(-1)">‹</button>
+      <span id="fecha-admin-display"></span>
+      <button onclick="cambiarDiaAdmin(+1)">›</button>
+    </div>
+    <div id="lista-turnos-admin"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ══════════════════════════════════════════════
+// CONSTANTES
+// ══════════════════════════════════════════════
+const HORARIOS = [
+  '09:00','09:30','10:00','10:30','11:00','11:30',
+  '12:00','12:30','13:00','13:30','14:00','14:30',
+  '15:00','15:30','16:00','16:30','17:00','17:30',
+  '18:00','18:30','19:00','19:30','20:00','20:30'
+];
+const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+const BARBERIAS = ['C-PIKO','SALON 23','LA REPÚBLICA','LA CATEDRAL'];
+const PASS_ADMIN = 'Trabaja123';
+
+// ══════════════════════════════════════════════
+// ESTADO
+// ══════════════════════════════════════════════
+let sesion = null; // { tipo: 'admin' | 'barbero', id }
+let barberoSelId  = null;
+let barberiaSelNombre = null;
+let horaSeleccionada  = null;
+let fechaAgendaBarbero = new Date();
+let fechaAgendaAdmin   = new Date();
+
+// ══════════════════════════════════════════════
+// DATOS (localStorage)
+// ══════════════════════════════════════════════
+function cargar() {
+  return {
+    barberos: JSON.parse(localStorage.getItem('cpiko_barberos') || '[]'),
+    turnos:   JSON.parse(localStorage.getItem('cpiko_turnos')   || '[]'),
+    ausencias:JSON.parse(localStorage.getItem('cpiko_ausencias')|| '[]'),
+  };
+}
+function guardar(d) {
+  localStorage.setItem('cpiko_barberos',  JSON.stringify(d.barberos));
+  localStorage.setItem('cpiko_turnos',    JSON.stringify(d.turnos));
+  localStorage.setItem('cpiko_ausencias', JSON.stringify(d.ausencias));
+}
+
+// ══════════════════════════════════════════════
+// UTILIDADES FECHA
+// ══════════════════════════════════════════════
+function fStr(f){ return `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`; }
+function strF(s){ const[y,m,d]=s.split('-').map(Number); return new Date(y,m-1,d); }
+function fLeg(f){ return `${DIAS[f.getDay()]} ${f.getDate()} de ${MESES[f.getMonth()]} ${f.getFullYear()}`; }
+function esDiaHabil(f){ return f.getDay()>=1 && f.getDay()<=6; }
+
+// ══════════════════════════════════════════════
+// DISPONIBILIDAD Y COLOR
+// ══════════════════════════════════════════════
+function getPct(barberoId, fecha) {
+  // Devuelve porcentaje de ocupación de un barbero en una fecha
+  const d = cargar();
+  const aus = d.ausencias.filter(a => a.barberoId === barberoId && a.fecha === fecha).map(a=>a.hora);
+  const ocup = d.turnos.filter(t => t.barberoId === barberoId && t.fecha === fecha).map(t=>t.hora);
+  const horasDisp = HORARIOS.filter(h => !aus.includes(h));
+  if (!horasDisp.length) return 100;
+  return Math.round((ocup.length / horasDisp.length) * 100);
+}
+
+function getClaseColor(pct) {
+  if (pct <= 25) return 'disp-0';
+  if (pct <= 50) return 'disp-1';
+  if (pct <= 75) return 'disp-2';
+  if (pct <= 90) return 'disp-3';
+  return 'disp-4';
+}
+
+function getProximoLibre(barberoId) {
+  // Devuelve la hora del próximo turno libre hoy
+  const hoy = fStr(new Date());
+  const d = cargar();
+  const ocup = d.turnos.filter(t=>t.barberoId===barberoId&&t.fecha===hoy).map(t=>t.hora);
+  const aus  = d.ausencias.filter(a=>a.barberoId===barberoId&&a.fecha===hoy).map(a=>a.hora);
+  const ahora = new Date();
+  const horaActual = `${String(ahora.getHours()).padStart(2,'0')}:${String(ahora.getMinutes()).padStart(2,'0')}`;
+  const libre = HORARIOS.find(h => h >= horaActual && !ocup.includes(h) && !aus.includes(h));
+  return libre || null;
+}
+
+function rankingBarberos(lista) {
+  return lista.sort((a,b) => {
+    const pA = getPct(a.id, fStr(new Date()));
+    const pB = getPct(b.id, fStr(new Date()));
+    const lA = getProximoLibre(a.id);
+    const lB = getProximoLibre(b.id);
+    // Primero el que tiene próximo libre más temprano
+    if (lA && lB) { if (lA !== lB) return lA.localeCompare(lB); }
+    if (lA && !lB) return -1;
+    if (!lA && lB) return 1;
+    // Desempate: menos ocupado
+    return pA - pB;
+  });
+}
+
+function rankingBarberias() {
+  const d = cargar();
+  const hoy = fStr(new Date());
+  return BARBERIAS.map(nombre => {
+    const barberos = d.barberos.filter(b=>b.barberia===nombre&&b.estado==='activo');
+    if (!barberos.length) return { nombre, pct: 100, proximoLibre: null };
+    const pcts = barberos.map(b => getPct(b.id, hoy));
+    const pct  = Math.round(pcts.reduce((a,c)=>a+c,0)/pcts.length);
+    const proximos = barberos.map(b=>getProximoLibre(b.id)).filter(Boolean);
+    const proximoLibre = proximos.sort()[0] || null;
+    return { nombre, pct, proximoLibre };
+  }).sort((a,b) => {
+    if (a.proximoLibre && b.proximoLibre && a.proximoLibre !== b.proximoLibre)
+      return a.proximoLibre.localeCompare(b.proximoLibre);
+    if (a.proximoLibre && !b.proximoLibre) return -1;
+    if (!a.proximoLibre && b.proximoLibre) return 1;
+    return a.pct - b.pct;
+  });
+}
+
+// ══════════════════════════════════════════════
+// NAVEGACIÓN
+// ══════════════════════════════════════════════
+function irA(p) {
+  document.querySelectorAll('.pantalla').forEach(x=>x.classList.remove('activa'));
+  document.getElementById(`pantalla-${p}`).classList.add('activa');
+  window.scrollTo(0,0);
+}
+
+// ══════════════════════════════════════════════
+// PANTALLA: BARBERÍAS (inicio cliente)
+// ══════════════════════════════════════════════
+function renderBarberias() {
+  const ranking = rankingBarberias();
+  const container = document.getElementById('lista-barberias');
+  container.innerHTML = ranking.map((bar, i) => {
+    const cls = getClaseColor(bar.pct);
+    const libre = bar.proximoLibre ? `Próximo libre: ${bar.proximoLibre}` : 'Sin turnos disponibles hoy';
+    return `
+      <div class="rank-card ${cls}" onclick="elegirBarberia('${bar.nombre}')">
+        <div class="rank-num">#${i+1}</div>
+        <h3>✂️ ${bar.nombre}</h3>
+        <p class="sub">${libre}</p>
+        <div class="barra-container">
+          <div class="barra" style="width:${bar.pct}%"></div>
+        </div>
+        <p class="pct">${bar.pct}% ocupada</p>
+      </div>`;
+  }).join('');
+}
+
+function elegirBarberia(nombre) {
+  barberiaSelNombre = nombre;
+  document.getElementById('titulo-barberia-sel').textContent = `✂️ ${nombre}`;
+  renderBarberosCliente(nombre);
+  irA('barberos');
+}
+
+// ══════════════════════════════════════════════
+// PANTALLA: BARBEROS (cliente elige barbero)
+// ══════════════════════════════════════════════
+function renderBarberosCliente(barberia) {
+  const d = cargar();
+  const activos = d.barberos.filter(b=>b.barberia===barberia&&b.estado==='activo');
+  const ranking = rankingBarberos(activos);
+  const container = document.getElementById('lista-barberos-cliente');
+  if (!ranking.length) {
+    container.innerHTML = '<p class="vacio">No hay barberos disponibles</p>';
+    return;
+  }
+  container.innerHTML = ranking.map((b,i) => {
+    const pct  = getPct(b.id, fStr(new Date()));
+    const cls  = getClaseColor(pct);
+    const libre = getProximoLibre(b.id);
+    const libTxt = libre ? `Próximo libre: ${libre}` : 'Sin turnos hoy';
+    return `
+      <div class="rank-card ${cls}" onclick="elegirBarbero('${b.id}')">
+        <div class="rank-num">#${i+1}</div>
+        <h3>💈 ${b.nombre}</h3>
+        <p class="sub">${libTxt}</p>
+        <div class="barra-container">
+          <div class="barra" style="width:${pct}%"></div>
+        </div>
+        <p class="pct">${pct}% ocupado</p>
+      </div>`;
+  }).join('');
+}
+
+function elegirBarbero(id) {
+  barberoSelId = id;
+  const d = cargar();
+  const b = d.barberos.find(x=>x.id===id);
+  document.getElementById('titulo-barbero-sel').textContent = `💈 ${b.nombre}`;
+  document.getElementById('cli-nombre').value = '';
+  document.getElementById('cli-tel').value    = '';
+  horaSeleccionada = null;
+  // Fecha por defecto: hoy o próximo lunes
+  let hoy = new Date();
+  if (!esDiaHabil(hoy)) hoy.setDate(hoy.getDate()+1);
+  const fi = document.getElementById('turno-fecha');
+  fi.value = fStr(hoy);
+  fi.min   = fStr(new Date());
+  document.getElementById('grilla-horas').innerHTML =
+    '<p style="color:#aaa;font-size:13px;grid-column:span 4">Primero elegí una fecha</p>';
+  document.getElementById('resumen').style.display = 'none';
+  onCambiarFecha();
+  irA('sacar-turno');
+}
+
+// ══════════════════════════════════════════════
+// SACAR TURNO (cliente)
+// ══════════════════════════════════════════════
+function onCambiarFecha() {
+  const v = document.getElementById('turno-fecha').value;
+  if (!v) return;
+  const f = strF(v);
+  if (!esDiaHabil(f)) {
+    toast('⛔ Domingo no disponible. Elegí Lunes a Sábado.','error');
+    document.getElementById('turno-fecha').value = '';
+    return;
+  }
+  horaSeleccionada = null;
+  generarGrillaHoras(v);
+  actualizarResumen();
+}
+
+function generarGrillaHoras(fecha) {
+  const d = cargar();
+  const ocup = d.turnos.filter(t=>t.barberoId===barberoSelId&&t.fecha===fecha).map(t=>t.hora);
+  const aus  = d.ausencias.filter(a=>a.barberoId===barberoSelId&&a.fecha===fecha).map(a=>a.hora);
+  document.getElementById('grilla-horas').innerHTML = HORARIOS.map(h => {
+    if (aus.includes(h))  return `<button class="hora-btn ausente" disabled>🚫<br><small>${h}</small></button>`;
+    if (ocup.includes(h)) return `<button class="hora-btn ocupada" disabled>${h}</button>`;
+    const sel = h === horaSeleccionada ? ' seleccionada' : '';
+    return `<button class="hora-btn${sel}" onclick="selHora('${h}')">${h}</button>`;
+  }).join('');
+}
+
+function selHora(h) {
+  horaSeleccionada = h;
+  const v = document.getElementById('turno-fecha').value;
+  generarGrillaHoras(v);
+  actualizarResumen();
+}
+
+function actualizarResumen() {
+  const nombre = document.getElementById('cli-nombre').value.trim();
+  const fv     = document.getElementById('turno-fecha').value;
+  const div    = document.getElementById('resumen');
+  if (!fv || !horaSeleccionada) { div.style.display='none'; return; }
+  div.style.display = 'block';
+  const d = cargar();
+  const b = d.barberos.find(x=>x.id===barberoSelId);
+  div.innerHTML = `<strong>📋 Resumen</strong><br>
+    ✂️ ${b?.nombre || ''} — ${barberiaSelNombre}<br>
+    ${nombre ? '👤 ' + nombre + '<br>' : ''}
+    📅 ${fLeg(strF(fv))}<br>
+    🕐 ${horaSeleccionada}`;
+}
+
+function confirmarTurno() {
+  const nombre = document.getElementById('cli-nombre').value.trim();
+  const tel    = document.getElementById('cli-tel').value.trim();
+  const fv     = document.getElementById('turno-fecha').value;
+  if (!nombre) { toast('⚠️ Ingresá tu nombre','error'); return; }
+  if (!tel)    { toast('⚠️ Ingresá tu teléfono','error'); return; }
+  if (!fv)     { toast('⚠️ Elegí una fecha','error'); return; }
+  if (!horaSeleccionada) { toast('⚠️ Elegí un horario','error'); return; }
+  if (!esDiaHabil(strF(fv))) { toast('⛔ Elegí Lunes a Sábado','error'); return; }
+  const d = cargar();
+  if (d.turnos.some(t=>t.barberoId===barberoSelId&&t.fecha===fv&&t.hora===horaSeleccionada)) {
+    toast('⛔ Ese horario ya está ocupado','error'); return;
+  }
+  const b = d.barberos.find(x=>x.id===barberoSelId);
+  const turno = {
+    id: Date.now().toString(),
+    barberoId: barberoSelId,
+    barberoNombre: b.nombre,
+    barberia: b.barberia,
+    clienteNombre: nombre,
+    clienteTel: tel,
+    fecha: fv,
+    hora: horaSeleccionada,
+  };
+  d.turnos.push(turno);
+  guardar(d);
+
+  // WhatsApp al barbero
+  const msg = encodeURIComponent(
+    `✂️ NUEVO TURNO - ${b.barberia}\n👤 Cliente: ${nombre}\n📞 Tel: ${tel}\n📅 ${fLeg(strF(fv))}\n🕐 ${horaSeleccionada}`
+  );
+  const waNum = b.whatsapp.replace(/\D/g,'');
+
+  // Armar ICS para calendario
+  const fechaICS = fv.replace(/-/g,'');
+  const horaICS  = horaSeleccionada.replace(':','') + '00';
+  const horaFin  = calcHoraFin(horaSeleccionada);
+  const ics = `BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${fechaICS}T${horaICS}\nDTEND:${fechaICS}T${horaFin}\nSUMMARY:Turno en ${b.barberia} con ${b.nombre}\nDESCRIPTION:Tu turno con ${b.nombre}\nBEGIN:VALARM\nTRIGGER:-PT60M\nACTION:DISPLAY\nDESCRIPTION:Recordatorio tu turno en 1 hora\nEND:VALARM\nEND:VEVENT\nEND:VCALENDAR`;
+  const blob = new Blob([ics],{type:'text/calendar'});
+  const urlICS = URL.createObjectURL(blob);
+
+  document.getElementById('box-confirmacion').innerHTML = `
+    <h3>✅ ¡Turno confirmado!</h3>
+    <p>
+      ✂️ <strong>${b.nombre}</strong> — ${b.barberia}<br>
+      📅 ${fLeg(strF(fv))}<br>
+      🕐 ${horaSeleccionada}<br>
+      👤 ${nombre}
+    </p>
+    <a href="https://wa.me/${waNum}?text=${msg}" target="_blank"
+       class="btn btn-wa" style="display:block;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold;margin-bottom:10px">
+      📲 Confirmar por WhatsApp
+    </a>
+    <a href="${urlICS}" download="turno.ics"
+       class="btn btn-cal" style="display:block;text-decoration:none;padding:14px;border-radius:12px;font-weight:bold">
+      📅 Guardar recordatorio en mi calendario
+    </a>`;
+  irA('confirmacion');
+}
+
+function calcHoraFin(hora) {
+  const [h,m] = hora.split(':').map(Number);
+  const total = h*60+m+30;
+  return `${String(Math.floor(total/60)).padStart(2,'0')}${String(total%60).padStart(2,'0')}00`;
+}
+
+// ══════════════════════════════════════════════
+// LOGIN
+// ══════════════════════════════════════════════
+function mostrarLogin() { irA('login'); }
+
+function hacerLogin() {
+  const pass = document.getElementById('login-pass').value;
+  document.getElementById('login-pass').value = '';
+  if (pass === PASS_ADMIN) {
+    sesion = { tipo: 'admin' };
+    renderAdmin();
+    irA('admin');
+    return;
+  }
+  const d = cargar();
