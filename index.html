@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <title>Mi Barbería</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --negro: #1a1a2e; --azul: #16213e; --dorado: #e2b96f;
+      --verde: #2ecc71; --rojo: #e74c3c; --gris: #f4f4f4;
+      --texto: #333; --blanco: #ffffff;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--gris); color: var(--texto); min-height: 100vh; }
+    .header { background: var(--negro); color: var(--blanco); padding: 20px 16px 16px; text-align: center; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+    .header h1 { font-size: 22px; letter-spacing: 1px; }
+    .header p { font-size: 12px; color: var(--dorado); margin-top: 2px; }
+    .nav { display: flex; background: var(--azul); position: sticky; top: 62px; z-index: 99; }
+    .nav button { flex: 1; padding: 14px 8px; border: none; background: transparent; color: #aaa; font-size: 13px; cursor: pointer; border-bottom: 3px solid transparent; transition: all 0.2s; }
+    .nav button.activo { color: var(--dorado); border-bottom-color: var(--dorado); font-weight: bold; }
+    .pantalla { display: none; padding: 16px; padding-bottom: 40px; }
+    .pantalla.activa { display: block; }
+    .card { background: var(--blanco); border-radius: 12px; padding: 16px; margin-bottom: 14px; box-shadow: 0 1px 4px rgba(0,0,0,0.08); }
+    .card h2 { font-size: 16px; color: var(--negro); margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--gris); }
+    input, select { width: 100%; padding: 14px 12px; border: 1.5px solid #ddd; border-radius: 8px; font-size: 16px; background: #fafafa; color: var(--texto); margin-bottom: 10px; -webkit-appearance: none; appearance: none; }
+    input:focus, select:focus { outline: none; border-color: var(--negro); background: var(--blanco); }
+    label { display: block; font-size: 13px; font-weight: 600; color: #555; margin-bottom: 4px; }
+    .btn { display: block; width: 100%; padding: 16px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; text-align: center; margin-bottom: 8px; transition: opacity 0.2s, transform 0.1s; }
+    .btn:active { opacity: 0.85; transform: scale(0.98); }
+    .btn-primario { background: var(--negro); color: var(--blanco); }
+    .btn-verde { background: var(--verde); color: var(--blanco); }
+    .btn-rojo { background: var(--rojo); color: var(--blanco); font-size: 13px; padding: 10px; }
+    .grilla-horas { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 10px; }
+    .hora-btn { padding: 12px 4px; border: 1.5px solid #ddd; border-radius: 8px; background: #fafafa; font-size: 14px; cursor: pointer; text-align: center; transition: all 0.15s; }
+    .hora-btn.seleccionada { background: var(--negro); color: var(--blanco); border-color: var(--negro); font-weight: bold; }
+    .hora-btn.ocupada { background: #ffe5e5; color: #c0392b; border-color: #f5c6c6; text-decoration: line-through; cursor: not-allowed; }
+    .turno-item { display: flex; align-items: center; background: var(--blanco); border-radius: 10px; padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); border-left: 4px solid var(--negro); }
+    .turno-hora { background: var(--negro); color: var(--blanco); border-radius: 8px; padding: 10px 8px; font-size: 15px; font-weight: bold; min-width: 58px; text-align: center; margin-right: 12px; }
+    .turno-datos { flex: 1; }
+    .turno-nombre { font-size: 16px; font-weight: 600; color: var(--negro); }
+    .turno-tel { font-size: 13px; color: #888; margin-top: 2px; }
+    .cliente-item { display: flex; align-items: center; background: var(--blanco); border-radius: 10px; padding: 12px; margin-bottom: 8px; box-shadow: 0 1px 4px rgba(0,0,0,0.07); }
+    .cliente-avatar { width: 44px; height: 44px; border-radius: 22px; background: var(--negro); color: var(--blanco); display: flex; align-items: center; justify-content: center; font-size: 20px; font-weight: bold; margin-right: 12px; flex-shrink: 0; }
+    .cliente-datos { flex: 1; }
+    .cliente-nombre { font-size: 16px; font-weight: 600; }
+    .cliente-tel { font-size: 13px; color: #888; margin-top: 2px; }
+    .fecha-nav { display: flex; align-items: center; justify-content: space-between; background: var(--negro); color: var(--blanco); border-radius: 10px; padding: 12px 16px; margin-bottom: 14px; }
+    .fecha-nav button { background: none; border: none; color: var(--dorado); font-size: 24px; cursor: pointer; padding: 0 8px; }
+    .fecha-nav span { font-size: 15px; font-weight: bold; text-align: center; }
+    #toast { position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%); background: var(--negro); color: var(--blanco); padding: 12px 24px; border-radius: 24px; font-size: 14px; font-weight: 500; opacity: 0; transition: opacity 0.3s; pointer-events: none; z-index: 999; max-width: 90%; text-align: center; }
+    #toast.visible { opacity: 1; }
+    #toast.error { background: var(--rojo); }
+    #toast.exito { background: var(--verde); }
+    .vacio { text-align: center; color: #aaa; padding: 30px 16px; font-size: 15px; }
+    .badge { display: inline-block; background: var(--dorado); color: var(--negro); border-radius: 10px; padding: 2px 8px; font-size: 12px; font-weight: bold; margin-left: 6px; }
+    .resumen { background: #eaf6ff; border-left: 4px solid var(--negro); border-radius: 8px; padding: 12px 14px; margin-bottom: 12px; font-size: 14px; line-height: 1.8; }
+  </style>
+</head>
+<body>
+
+<div class="header">
+  <h1>✂️ Mi Barbería</h1>
+  <p>Agenda de turnos</p>
+</div>
+
+<nav class="nav">
+  <button class="activo" onclick="irA('agenda')">📅 Agenda</button>
+  <button onclick="irA('nuevo')">➕ Nuevo</button>
+  <button onclick="irA('clientes')">👤 Clientes</button>
+</nav>
+
+<div id="pantalla-agenda" class="pantalla activa">
+  <div class="fecha-nav">
+    <button onclick="cambiarDia(-1)">‹</button>
+    <span id="fecha-display">Cargando...</span>
+    <button onclick="cambiarDia(+1)">›</button>
+  </div>
+  <div id="input-fecha-container" class="card" style="padding:12px">
+    <label>Ir a una fecha específica:</label>
+    <input type="date" id="fecha-picker" onchange="irAFecha(this.value)" />
+  </div>
+  <div id="lista-turnos"><p class="vacio">Cargando...</p></div>
+</div>
+
+<div id="pantalla-nuevo" class="pantalla">
+  <div class="card">
+    <h2>➕ Agendar Turno</h2>
+    <label>1. Cliente *</label>
+    <select id="turno-cliente" onchange="actualizarResumen()">
+      <option value="">— Seleccioná un cliente —</option>
+    </select>
+    <label>2. Fecha * <small style="color:#e74c3c">(Lun–Sáb)</small></label>
+    <input type="date" id="turno-fecha" onchange="onCambiarFechaTurno()" />
+    <label>3. Hora * <small style="color:#888">(09:00–20:30)</small></label>
+    <div class="grilla-horas" id="grilla-horas"></div>
+    <div class="resumen" id="resumen" style="display:none"></div>
+    <button class="btn btn-verde" onclick="guardarTurno()">✅ Confirmar Turno</button>
+  </div>
+</div>
+
+<div id="pantalla-clientes" class="pantalla">
+  <div class="card">
+    <h2>👤 Nuevo Cliente</h2>
+    <label>Nombre completo *</label>
+    <input type="text" id="cli-nombre" placeholder="Ej: Juan García" autocomplete="off" autocapitalize="words" />
+    <label>Teléfono</label>
+    <input type="tel" id="cli-tel" placeholder="Ej: 11 2345-6789" />
+    <button class="btn btn-primario" onclick="guardarCliente()">+ Registrar Cliente</button>
+  </div>
+  <div style="padding: 0 0 8px">
+    <strong>Clientes registrados</strong>
+    <span class="badge" id="badge-clientes">0</span>
+  </div>
+  <div id="lista-clientes"><p class="vacio">No hay clientes aún</p></div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+const HORARIOS = [
+  '09:00','09:30','10:00','10:30','11:00','11:30',
+  '12:00','12:30','13:00','13:30','14:00','14:30',
+  '15:00','15:30','16:00','16:30','17:00','17:30',
+  '18:00','18:30','19:00','19:30','20:00','20:30'
+];
+const DIAS  = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio',
+               'Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+let fechaAgenda = new Date();
+let horaSeleccionada = null;
+
+function cargarDatos() {
+  return {
+    clientes: JSON.parse(localStorage.getItem('barberia_clientes') || '[]'),
+    turnos:   JSON.parse(localStorage.getItem('barberia_turnos')   || '[]'),
+  };
+}
+function guardarDatos(datos) {
+  localStorage.setItem('barberia_clientes', JSON.stringify(datos.clientes));
+  localStorage.setItem('barberia_turnos',   JSON.stringify(datos.turnos));
+}
+function fechaAString(f) {
+  return `${f.getFullYear()}-${String(f.getMonth()+1).padStart(2,'0')}-${String(f.getDate()).padStart(2,'0')}`;
+}
+function stringAFecha(s) {
+  const [y,m,d] = s.split('-').map(Number);
+  return new Date(y, m-1, d);
+}
+function fechaLegible(f) {
+  return `${DIAS[f.getDay()]} ${f.getDate()} de ${MESES[f.getMonth()]} ${f.getFullYear()}`;
+}
+function esDiaHabil(f) {
+  return f.getDay() >= 1 && f.getDay() <= 6;
+}
+
+function irA(p) {
+  document.querySelectorAll('.pantalla').forEach(x => x.classList.remove('activa'));
+  document.querySelectorAll('.nav button').forEach(x => x.classList.remove('activo'));
+  document.getElementById(`pantalla-${p}`).classList.add('activa');
+  const idx = {agenda:0, nuevo:1, clientes:2};
+  document.querySelectorAll('.nav button')[idx[p]].classList.add('activo');
+  if (p==='agenda')   renderAgenda();
+  if (p==='nuevo')    inicializarFormulario();
+  if (p==='clientes') renderClientes();
+}
+
+function renderAgenda() {
+  const str = fechaAString(fechaAgenda);
+  document.getElementById('fecha-display').textContent = fechaLegible(fechaAgenda);
+  document.getElementById('fecha-picker').value = str;
+  const { clientes, turnos } = cargarDatos();
+  const hoy = turnos.filter(t => t.fecha === str).sort((a,b) => a.hora.localeCompare(b.hora));
+  const c = document.getElementById('lista-turnos');
+  if (!hoy.length) {
+    c.innerHTML = `<p class="vacio">${esDiaHabil(fechaAgenda) ? '📭 No hay turnos' : '🚫 Domingo — No laborable'}</p>`;
+    return;
+  }
+  c.innerHTML = hoy.map(t => {
+    const cl = clientes.find(x => x.id === t.clienteId);
+    return `<div class="turno-item">
+      <div class="turno-hora">${t.hora}</div>
+      <div class="turno-datos">
+        <div class="turno-nombre">${t.clienteNombre}</div>
+        ${cl?.telefono ? `<div class="turno-tel">📞 ${cl.telefono}</div>` : ''}
+      </div>
+      <button class="btn btn-rojo" style="width:auto;margin:0;padding:10px 14px" onclick="eliminarTurno('${t.id}')">✕</button>
+    </div>`;
+  }).join('');
+}
+function cambiarDia(d) { fechaAgenda.setDate(fechaAgenda.getDate()+d); renderAgenda(); }
+function irAFecha(v) { if(v){ fechaAgenda=stringAFecha(v); renderAgenda(); } }
+function eliminarTurno(id) {
+  if (!confirm('¿Eliminar este turno?')) return;
+  const d = cargarDatos();
+  d.turnos = d.turnos.filter(t => t.id !== id);
+  guardarDatos(d);
+  mostrarToast('Turno eliminado','exito');
+  renderAgenda();
+}
+
+function inicializarFormulario() {
+  horaSeleccionada = null;
+  const { clientes } = cargarDatos();
+  const sel = document.getElementById('turno-cliente');
+  sel.innerHTML = '<option value="">— Seleccioná un cliente —</option>';
+  clientes.sort((a,b)=>a.nombre.localeCompare(b.nombre)).forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.id;
+    o.textContent = c.nombre + (c.telefono ? ` — ${c.telefono}` : '');
+    sel.appendChild(o);
+  });
+  let hoy = new Date();
+  if (!esDiaHabil(hoy)) hoy.setDate(hoy.getDate()+1);
+  const fi = document.getElementById('turno-fecha');
+  fi.value = fechaAString(hoy);
+  fi.min   = fechaAString(new Date());
+  generarGrillaHoras([]);
+  document.getElementById('resumen').style.display = 'none';
+}
+function onCambiarFechaTurno() {
+  const v = document.getElementById('turno-fecha').value;
+  if (!v) return;
+  const f = stringAFecha(v);
+  if (!esDiaHabil(f)) {
+    mostrarToast('⛔ Domingo no disponible. Elegí Lunes a Sábado.','error');
+    document.getElementById('turno-fecha').value = '';
+    generarGrillaHoras([]);
+    return;
+  }
+  const { turnos } = cargarDatos();
+  const ocupadas = turnos.filter(t=>t.fecha===v).map(t=>t.hora);
+  horaSeleccionada = null;
+  generarGrillaHoras(ocupadas);
+  actualizarResumen();
+}
+function generarGrillaHoras(ocupadas) {
+  document.getElementById('grilla-horas').innerHTML = HORARIOS.map(h => {
+    const oc = ocupadas.includes(h);
+    const se = h === horaSeleccionada;
+    return `<button class="hora-btn${oc?' ocupada':''}${se?' seleccionada':''}"
+      onclick="${oc?'':` seleccionarHora('${h}')`}"
+      ${oc?'disabled':''}>
+      ${h}
+    </button>`;
+  }).join('');
+}
+function seleccionarHora(h) {
+  horaSeleccionada = h;
+  const v = document.getElementById('turno-fecha').value;
+  const { turnos } = cargarDatos();
+  generarGrillaHoras(turnos.filter(t=>t.fecha===v).map(t=>t.hora));
+  actualizarResumen();
+}
+function actualizarResumen() {
+  const sel = document.getElementById('turno-cliente');
+  const fv  = document.getElementById('turno-fecha').value;
+  const div = document.getElementById('resumen');
+  if (!sel.value || !fv || !horaSeleccionada) { div.style.display='none'; return; }
+  div.style.display = 'block';
+  div.innerHTML = `<strong>📋 Resumen</strong><br>
+    👤 ${sel.options[sel.selectedIndex].text.split(' — ')[0]}<br>
+    📅 ${fechaLegible(stringAFecha(fv))}<br>
+    🕐 ${horaSeleccionada}`;
+}
+function guardarTurno() {
+  const sel  = document.getElementById('turno-cliente');
+  const cId  = sel.value;
+  const cNom = sel.options[sel.selectedIndex]?.text.split(' — ')[0] || '';
+  const fv   = document.getElementById('turno-fecha').value;
+  if (!cId)  { mostrarToast('⚠️ Seleccioná un cliente','error'); return; }
+  if (!fv)   { mostrarToast('⚠️ Seleccioná una fecha','error');  return; }
+  if (!horaSeleccionada) { mostrarToast('⚠️ Seleccioná un horario','error'); return; }
+  if (!esDiaHabil(stringAFecha(fv))) { mostrarToast('⛔ Elegí Lunes a Sábado','error'); return; }
+  const d = cargarDatos();
+  if (d.turnos.some(t => t.fecha===fv && t.hora===horaSeleccionada)) {
+    mostrarToast('⛔ Ese horario ya está ocupado','error'); return;
+  }
+  d.turnos.push({ id: Date.now().toString(), clienteId: cId, clienteNombre: cNom, fecha: fv, hora: horaSeleccionada });
+  guardarDatos(d);
+  mostrarToast('✅ Turno agendado','exito');
+  fechaAgenda = stringAFecha(fv);
+  setTimeout(() => irA('agenda'), 800);
+}
+
+function renderClientes() {
+  const { clientes } = cargarDatos();
+  document.getElementById('badge-clientes').textContent = clientes.length;
+  const c = document.getElementById('lista-clientes');
+  if (!clientes.length) { c.innerHTML='<p class="vacio">No hay clientes registrados aún</p>'; return; }
+  c.innerHTML = [...clientes].sort((a,b)=>a.nombre.localeCompare(b.nombre)).map(cl => `
+    <div class="cliente-item">
+      <div class="cliente-avatar">${cl.nombre.charAt(0).toUpperCase()}</div>
+      <div class="cliente-datos">
+        <div class="cliente-nombre">${cl.nombre}</div>
+        <div class="cliente-tel">${cl.telefono?'📞 '+cl.telefono:'Sin teléfono'}</div>
+      </div>
+      <button class="btn btn-rojo" style="width:auto;margin:0" onclick="eliminarCliente('${cl.id}')">✕</button>
+    </div>`).join('');
+}
+function guardarCliente() {
+  const n = document.getElementById('cli-nombre').value.trim();
+  const t = document.getElementById('cli-tel').value.trim();
+  if (!n) { mostrarToast('⚠️ El nombre es obligatorio','error'); return; }
+  const d = cargarDatos();
+  if (d.clientes.some(c=>c.nombre.toLowerCase()===n.toLowerCase())) {
+    mostrarToast('⚠️ Ya existe ese cliente','error'); return;
+  }
+  d.clientes.push({ id: Date.now().toString(), nombre: n, telefono: t });
+  guardarDatos(d);
+  document.getElementById('cli-nombre').value = '';
+  document.getElementById('cli-tel').value    = '';
+  mostrarToast('✅ Cliente registrado','exito');
+  renderClientes();
+}
+function eliminarCliente(id) {
+  const d  = cargarDatos();
+  const cl = d.clientes.find(c=>c.id===id);
+  if (!confirm(`¿Eliminar a ${cl?.nombre}?`)) return;
+  d.clientes = d.clientes.filter(c=>c.id!==id);
+  guardarDatos(d);
+  mostrarToast('Cliente eliminado','exito');
+  renderClientes();
+}
+
+let toastT;
+function mostrarToast(msg, tipo='') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = `visible ${tipo}`;
+  clearTimeout(toastT);
+  toastT = setTimeout(()=>{ t.className=''; }, 2800);
+}
+
+renderAgenda();
+</script>
+</body>
+</html>
